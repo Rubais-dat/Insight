@@ -55,7 +55,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ── Session init ──────────────────────────────────────────────────────────────
-DEV_AUTO_LOGIN = True  # Set to False to test the real registration flow
+DEV_AUTO_LOGIN = False  # Set to False to test the real registration flow
 
 if "registered" not in st.session_state:
     if DEV_AUTO_LOGIN:
@@ -245,28 +245,28 @@ def show_insights_feed():
     # ── Top bar ───────────────────────────────────────────────────────────────
     st.markdown(
         f"<div style='background:{BRAND['bg_card']};"
-        f"border-bottom:2px solid #C0392B44; padding:16px 32px;"
-        f"display:flex; align-items:center; justify-content:space-between;"
+        f"border-bottom:2px solid #C0392B44; padding:16px 20px;"
+        f"display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;"
         f"position:sticky; top:0; z-index:100;'>"
-
+        
         f"<div style='display:flex; align-items:center; gap:12px;'>"
         f"<div style='font-size:26px;'>🔮</div>"
         f"<div>"
         f"<div style='font-size:18px; font-weight:800; color:#C0392B;'>GMA Insight</div>"
         f"<div style='font-size:11px; color:{BRAND['muted']};'>Get My Admission</div>"
         f"</div></div>"
-
-        f"<div style='display:flex; align-items:center; gap:16px;'>"
-        f"<div style='text-align:right;'>"
+        
+        f"<div style='display:flex; align-items:center; gap:12px; flex-wrap:wrap;'>"
+        f"<div style='text-align:left;'>"
         f"<div style='font-size:14px; font-weight:700; color:#FFFFFF;'>{s['name']}</div>"
         f"<div style='font-size:11px; color:{BRAND['muted']};'>{s['exam']} &nbsp;·&nbsp; {s['category']} &nbsp;·&nbsp; {s['state']}</div>"
         f"</div>"
-        f"<div style='display:flex; gap:8px;'>"
+        f"<div style='display:flex; gap:6px;'>"
         f"<span style='background:rgba(76,175,80,0.12); color:#4CAF50;"
-        f"padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;"
+        f"padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700;"
         f"border:1px solid rgba(76,175,80,0.35);'>Rank {rank_display}</span>"
         f"<span style='background:rgba(76,175,80,0.12); color:#4CAF50;"
-        f"padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;"
+        f"padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700;"
         f"border:1px solid rgba(76,175,80,0.35);'>Score {score_display}</span>"
         f"</div></div></div>",
         unsafe_allow_html=True,
