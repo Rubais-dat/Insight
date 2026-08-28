@@ -327,6 +327,20 @@ def show_insights_feed():
                 f"Check back often as the admission process progresses."
             )
 
+            hist = qi.get("historical_match")
+            if hist:
+                h_rank = hist["historical_rank"]
+                h_col = _clean(hist["college"])
+                h_cat = hist["category"]
+                para_hist = (
+                    f"<b>Historic Match</b>: Last year, a student with a highly similar rank of "
+                    f"<b style='color:#C0392B;'>{h_rank:,}</b> (in the {h_cat} category) secured a seat at "
+                    f"<b style='color:#C0392B;'>{h_col}</b>. This is a strong indicator of what you might expect."
+                )
+                para_hist_html = f"<p style='font-size:15px; color:{BRAND['muted']}; line-height:2; margin-bottom:20px;'>{para_hist}</p>"
+            else:
+                para_hist_html = ""
+
             para2_html = f"<p style='font-size:15px; color:{BRAND['muted']}; line-height:2; margin-bottom:20px;'>{para2}</p>" if para2 else ""
             para3_html = f"<p style='font-size:15px; color:{BRAND['muted']}; line-height:2; margin:0;'>{para3}</p>"
 
@@ -338,6 +352,7 @@ def show_insights_feed():
                 f"⚡ Quick Insight</div>"
                 f"<p style='font-size:15px; color:{BRAND['muted']}; line-height:2; margin-bottom:20px;'>{para1}</p>"
                 f"{para2_html}"
+                f"{para_hist_html}"
                 f"{para3_html}"
                 f"</div>",
                 unsafe_allow_html=True,

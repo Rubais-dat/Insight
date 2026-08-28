@@ -57,14 +57,11 @@ def _extract_code(name: str) -> str:
 
 # ── Core logic ────────────────────────────────────────────────────────────────
 
-def get_last_ranks(round_pref: str = "Round 3") -> pd.DataFrame:
-    """Last allotted rank per college × course × category."""
+def get_last_ranks() -> pd.DataFrame:
+    """Last allotted rank per college × course × category across all rounds."""
     df = load_kerala_data()
-    r  = df[df["Round"] == round_pref]
-    if r.empty:
-        r = df
     cutoffs = (
-        r.groupby(["College Name", "Course", "Alloted Category"])["Rank"]
+        df.groupby(["College Name", "Course", "Alloted Category"])["Rank"]
         .max()
         .reset_index()
         .rename(columns={"Rank": "last_rank"})
@@ -91,11 +88,11 @@ def get_better_choices(rank: int, category_code: str,
     reachable = relevant[relevant["last_rank"] >= rank].copy()
 
     if reachable.empty:
-        # Fallback: nearest colleges above rank
-        reachable = relevant.copy()
-
-    # Sort by closest cutoff (tightest competition first = best match)
-    reachable = reachable.sort_values("last_rank").head(30)
+        # Fallback: nearest colleges above rank (closest misses)
+        reachable = relevant.sort_values("last_rank", ascending=False).head(30)
+    else:
+        # Sort by closest cutoff (tightest competition first = best match)
+        reachable = reachable.sort_values("last_rank").head(30)
 
     # Join fee/rating data on college code
     results = []
@@ -134,6 +131,27 @@ def get_better_choices(rank: int, category_code: str,
     return results
 
 
+def get_historical_match(rank: int, category_code: str) -> dict:
+    """Finds the student from 2025 who had the closest rank in eligible categories."""
+    df = load_kerala_data()
+    # Student is eligible for their category and SM (General)
+    eligible = df[df["Alloted Category"].isin(["SM", category_code])].copy()
+    
+    if eligible.empty:
+        return None
+        
+    # Calculate absolute difference to find nearest rank
+    eligible["diff"] = (eligible["Rank"] - rank).abs()
+    closest_match = eligible.sort_values("diff").iloc[0]
+    
+    return {
+        "historical_rank": int(closest_match["Rank"]),
+        "college": str(closest_match["College Name"]),
+        "category": str(closest_match["Alloted Category"]),
+        "diff": int(closest_match["diff"])
+    }
+
+
 def get_quick_insight(rank: int, category_code: str) -> dict:
     """Summary for the quick-info card shown right after registration."""
     df       = load_kerala_data()
@@ -155,6 +173,7 @@ def get_quick_insight(rank: int, category_code: str) -> dict:
         band = "Above 35,000 — Few options available"
 
     better_choices = get_better_choices(rank, category_code, n=6)
+    historical_match = get_historical_match(rank, category_code)
 
     return {
         "rank":           rank,
@@ -162,4 +181,6 @@ def get_quick_insight(rank: int, category_code: str) -> dict:
         "percentile":     percentile,
         "rank_band":      band,
         "better_choices": better_choices,
+        "historical_match": historical_match,
     }
+
