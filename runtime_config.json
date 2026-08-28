@@ -1,0 +1,39 @@
+{
+    "active_modules": [
+        "community"
+    ],
+    "manual_insights": [
+        {
+            "title": "Community Poll Results (1 Responses)",
+            "content": "Hey everyone! \ud83c\udf1f We've just analyzed the live poll responses from **1 GMA students**, and here is what the community is saying:\n\nWhen it came to the **Overall Exam**, most of you voted for **Medium**. Breaking it down further: most found **Biology** to be **Medium**, most found **Chemistry** to be **Easy**, and finally, the majority found **Physics** to be **Easy**.\n\nDoes this match your experience?\n\n> **Note:** Kindly calculate your score using the final official answer key. This data is based on GMA user polls and does not claim to represent the entire exam population."
+        },
+        {
+            "title": "Resullt publsihed",
+            "content": "According to gma review the newr result is very competetive, aand we predict the cutoof will goes to 600 for government colleges"
+        },
+        {
+            "title": "**KEAM Counselling Insights**",
+            "content": "* Students with a **rank within 2,000** have a strong chance of securing seats in **government colleges**, depending on the course and category.\n* Students with a **rank between 2,000\u20135,000** should prioritize government colleges first and keep aided/private colleges as backup options.\n* Students with a **rank between 5,000\u201310,000** should explore government colleges with wider choices and also include private colleges in the preference list.\n* Students with a **rank above 10,000** should keep a broader choice list and consider private/self-financing colleges along with available government options.\n* Students with **Minority Certificates or applicable reservation certificates** should add them during registration, as they may become eligible for additional seats and improve their chances of securing an allotment.\n* Always place the **preferred government colleges first**, followed by realistic backup options.",
+            "target_exam": "All Students"
+        }
+    ],
+    "stage_updated_at": "2026-08-28 18:06:24",
+    "updated_by": "rubais",
+    "poll_settings": {
+        "is_active": false,
+        "expires_at": "",
+        "title": "Community Poll",
+        "intro_content": "Happy to hear your exam is finished! What do you think about the exam overall?",
+        "questions": [
+            "Overall Exam",
+            "Biology",
+            "Chemistry",
+            "Physics"
+        ],
+        "options": [
+            "Easy",
+            "Medium",
+            "Difficult"
+        ]
+    }
+}
