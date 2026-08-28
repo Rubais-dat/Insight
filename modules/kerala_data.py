@@ -32,6 +32,9 @@ def load_kerala_data() -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def load_comparison_data() -> pd.DataFrame:
+    if not os.path.exists(COMP_PATH):
+        return pd.DataFrame(columns=["College Name", "Tution Fee", "Total Fee", "Hostel Fee", "College Type", "GMA Rank", "GMA Rating", "code"])
+        
     df = pd.read_excel(COMP_PATH)
     df.columns = [c.strip() for c in df.columns]
 
