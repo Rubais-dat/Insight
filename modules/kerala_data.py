@@ -29,6 +29,18 @@ def load_kerala_data() -> pd.DataFrame:
     df["Alloted Category"] = df["Alloted Category"].str.strip()
     return df
 
+@st.cache_data(show_spinner=False)
+def get_all_categories() -> list[str]:
+    """Returns a sorted list of all unique category codes present in the Kerala dataset."""
+    df = load_kerala_data()
+    cats = df["Alloted Category"].dropna().unique().tolist()
+    # Sort them, keeping SM (State Merit / General) at the top if present
+    cats.sort()
+    if "SM" in cats:
+        cats.remove("SM")
+        cats.insert(0, "SM")
+    return cats
+
 
 @st.cache_data(show_spinner=False)
 def load_comparison_data() -> pd.DataFrame:

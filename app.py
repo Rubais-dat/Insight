@@ -41,7 +41,7 @@ from modules.config import (
 )
 from modules.ui_components import inject_global_css
 from modules.data_loader   import load_allotment_data, load_rank_distribution, score_to_rank
-from modules.kerala_data       import get_quick_insight
+from modules.kerala_data       import get_quick_insight, get_all_categories
 
 # ── CSS ──────────────────────────────────────────────────────────────────────
 inject_global_css()
@@ -127,24 +127,22 @@ def show_registration():
         with col2:
             state_pre = st.selectbox(
                 "State *",
-                ["Kerala", "Tamil Nadu", "Karnataka", "Andhra Pradesh",
-                 "Telangana", "Maharashtra", "Delhi", "Uttar Pradesh",
-                 "Rajasthan", "Gujarat", "West Bengal", "Other"],
+                ["Kerala"],
                 key="reg_state",
             )
 
-        # Dynamic category list based on chosen state
-        cat_options = STATE_CATEGORIES.get(st.session_state.reg_state, CATEGORIES)
+        # Dynamic category list directly from Kerala allotment data
+        cat_options = get_all_categories()
 
         with st.form("registration_form"):
             col3, col4 = st.columns(2)
             with col3:
                 category = st.selectbox(
-                    f"Category * {'(Kerala CEE)' if st.session_state.reg_state == 'Kerala' else ''}",
+                    f"Category * (Kerala CEE)",
                     cat_options,
                 )
             with col4:
-                exam = st.selectbox("Exam *", ["NEET UG", "KEAM", "NEET PG"])
+                exam = st.selectbox("Exam *", ["NEET UG"])
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -154,15 +152,10 @@ def show_registration():
                 f"letter-spacing:1.5px; margin-bottom:10px;'>Exam &amp; Rank Details</div>",
                 unsafe_allow_html=True,
             )
-            if st.session_state.reg_state == "Kerala":
-                score = 0
-                rank = st.number_input("Rank *", min_value=0, max_value=1_000_000, value=0, step=1)
-            else:
-                col5, col6 = st.columns(2)
-                with col5:
-                    score = st.number_input("Score (out of 720)", min_value=0, max_value=720, value=0, step=1)
-                with col6:
-                    rank  = st.number_input("Rank", min_value=0, max_value=1_000_000, value=0, step=1)
+            
+            # Since state is locked to Kerala, we only need the single input
+            score = 0
+            rank = st.number_input("State Rank *", min_value=0, max_value=1_000_000, value=0, step=1)
 
             st.markdown("<br>", unsafe_allow_html=True)
             submitted = st.form_submit_button("🔮 Get My Insights →", use_container_width=True)
