@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-BASE_DIR    = os.path.dirname(__file__)
+BASE_DIR    = os.path.dirname(os.path.dirname(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "runtime_config.json")
 ADMIN_PASSWORD = "gma@admin2026"
 
