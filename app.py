@@ -425,7 +425,7 @@ def show_insights_feed():
                 .poll-inner {{
                     background: linear-gradient(150deg, #121512 60%, #0A0C0A 100%);
                     border-radius: 26px;
-                    padding: 40px 44px;
+                    padding: 24px;
                     position: relative;
                     overflow: hidden;
                 }}
@@ -537,7 +537,7 @@ def show_insights_feed():
                         metrics[q][vote] = 1
             
             # Build the ENTIRE card as one HTML string so it renders inside the dark container
-            html = f"""<div style='background: linear-gradient(145deg, #121512, #0A0C0A); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; margin-bottom: 30px; box-shadow: 0 10px 50px rgba(0,0,0,0.5); position: relative; overflow: hidden;'>
+            html = f"""<div style='background: linear-gradient(145deg, #121512, #0A0C0A); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 24px; margin-bottom: 30px; box-shadow: 0 10px 50px rgba(0,0,0,0.5); position: relative; overflow: hidden;'>
 <div style='position: absolute; top: -80px; left: -80px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(192,57,43,0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none;'></div>
 <div style='position: absolute; bottom: -80px; right: -80px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(76,175,80,0.1) 0%, transparent 70%); border-radius: 50%; pointer-events: none;'></div>
 <div style='position: relative; z-index: 10;'>
