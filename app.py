@@ -269,6 +269,18 @@ def show_insights_feed():
     _, main, _ = st.columns([0.3, 9, 0.3])
     with main:
         st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Action Bar
+        col_btn1, col_btn2, col_btn_spacer = st.columns([2, 2, 8])
+        with col_btn1:
+            if st.button("🔄 Refresh Feed", use_container_width=True):
+                st.rerun()
+        with col_btn2:
+            if st.button("✏️ Edit Profile", use_container_width=True):
+                st.session_state.registered = False
+                st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
 
         # ── Quick Insight (Conversational Header) ─────────────────────────
         is_kerala  = s["state"] == "Kerala"
@@ -859,13 +871,6 @@ def show_insights_feed():
                 minified = re.sub(r'\n\s*', ' ', card_html)
                 st.markdown(minified, unsafe_allow_html=True)
 
-        # ── Edit profile link ─────────────────────────────────────────────────
-        st.markdown("<br>", unsafe_allow_html=True)
-        col_l, col_mid, col_r = st.columns([3, 1, 3])
-        with col_mid:
-            if st.button("✏️ Edit Profile", use_container_width=True):
-                st.session_state.registered = False
-                st.rerun()
 
     # Footer
     st.markdown(f"""
