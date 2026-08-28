@@ -22,8 +22,8 @@ def inject_global_css():
         color: {BRAND["text"]};
     }}
 
-    /* Hide Streamlit chrome */
-    #MainMenu, footer, header {{ visibility: hidden; }}
+    /* Hide Streamlit chrome but keep header for sidebar toggle */
+    #MainMenu, footer {{ visibility: hidden; }}
     .block-container {{ padding-top: 1.5rem; padding-bottom: 2rem; max-width: 1100px; }}
 
     /* Sidebar */
