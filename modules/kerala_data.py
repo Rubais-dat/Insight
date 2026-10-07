@@ -107,10 +107,10 @@ def get_better_choices(rank: int, category_code: str,
 
     if reachable.empty:
         # Fallback: nearest colleges above rank (closest misses)
-        reachable = relevant.sort_values("last_rank", ascending=False).head(30)
+        reachable = relevant.sort_values("last_rank", ascending=False).head(50)
     else:
         # Sort by closest cutoff (tightest competition first = best match)
-        reachable = reachable.sort_values("last_rank").head(30)
+        reachable = reachable.sort_values("last_rank")
 
     # Join fee/rating data on college code
     results = []
@@ -128,6 +128,16 @@ def get_better_choices(rank: int, category_code: str,
         total_fee   = int(fee_row["Total Fee"].values[0])   if not fee_row.empty and not pd.isna(fee_row["Total Fee"].values[0])   else None
         tuition_fee = int(fee_row["Tution Fee"].values[0])  if not fee_row.empty and not pd.isna(fee_row["Tution Fee"].values[0])  else None
         college_type= fee_row["College Type"].values[0]     if not fee_row.empty else "—"
+        
+        # Fallback heuristic for Allied courses missing from the Comparison dataset
+        if college_type == "—":
+            cn_lower = col_name.lower()
+            gov_keywords = ["govt", "government", "college of agriculture", "college of veterinary", "college of horticulture", "college of forestry", "ayurveda college", "kerala university", "gov.", "kerala veterinary", "kerala agricultural"]
+            if any(kw in cn_lower for kw in gov_keywords) and "self financing" not in cn_lower:
+                college_type = "Government"
+            else:
+                college_type = "Private"
+                
         gma_rank    = fee_row["GMA Rank"].values[0]         if not fee_row.empty else None
         gma_rating  = str(fee_row["GMA Rating"].values[0])  if not fee_row.empty else "—"
 
@@ -195,7 +205,7 @@ def get_quick_insight(rank: int, category_code: str, selected_courses: list = No
     else:
         band = "Above 35,000 — Few options available"
 
-    better_choices = get_better_choices(rank, category_code, selected_courses, n=100)
+    better_choices = get_better_choices(rank, category_code, selected_courses, n=1000)
     historical_match = get_historical_match(rank, category_code, selected_courses)
 
     return {

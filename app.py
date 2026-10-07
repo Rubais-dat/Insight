@@ -227,6 +227,16 @@ def show_insights_feed():
                         if not colleges:
                             st.info("No colleges found in this category for your rank.")
                         else:
+                            unique_courses = sorted(list(set(c.get("course", "Unknown Course") for c in colleges)))
+                            if len(unique_courses) > 1:
+                                filter_course = st.selectbox("Filter by Course", ["Select All"] + unique_courses)
+                                if filter_course != "Select All":
+                                    colleges = [c for c in colleges if c.get("course", "Unknown Course") == filter_course]
+                                    
+                            if not colleges:
+                                st.info("No colleges found for this specific course filter.")
+                                return
+                                
                             html_table = """
 <style>
 .glass-table {

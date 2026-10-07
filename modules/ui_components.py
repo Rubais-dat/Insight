@@ -1020,14 +1020,10 @@ def render_registration():
         
         selected_courses_raw = st.multiselect(
             "Select Course(s) *",
-            ["ALL"] + ALL_COURSES,
+            ALL_COURSES,
             default=["MBBS"]
         )
-        
-        if "ALL" in selected_courses_raw:
-            selected_courses = ALL_COURSES
-        else:
-            selected_courses = selected_courses_raw
+        selected_courses = selected_courses_raw
         
         # Filter category options based on selected courses
         filtered_cat_options = cat_options
