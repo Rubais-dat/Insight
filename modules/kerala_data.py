@@ -21,12 +21,14 @@ COMP_PATH   = os.path.join(os.path.dirname(__file__), "..", "KERALA COMPARISON D
 
 @st.cache_data(show_spinner=False)
 def load_kerala_data() -> pd.DataFrame:
-    df = pd.read_excel(RANK_PATH)
-    df.columns = [c.strip() for c in df.columns]
-    df["Rank"] = pd.to_numeric(df["Rank"], errors="coerce")
-    df = df.dropna(subset=["Rank", "Alloted Category"])
-    df["Rank"] = df["Rank"].astype(int)
-    df["Alloted Category"] = df["Alloted Category"].str.strip()
+    from modules.data_loader import load_real_allotment_data
+    df = load_real_allotment_data()
+    if "Category" in df.columns:
+        df = df.rename(columns={"Category": "Alloted Category"})
+    df["Alloted Category"] = df["Alloted Category"].astype(str).str.strip()
+    df["College Name"] = df["College Name"].astype(str).str.strip()
+    # Normalize whitespaces to fix internal excel typos
+    df["College Name"] = df["College Name"].str.replace(r'\s+', ' ', regex=True)
     return df
 
 @st.cache_data(show_spinner=False)
@@ -83,6 +85,7 @@ def get_last_ranks() -> pd.DataFrame:
 
 
 def get_better_choices(rank: int, category_code: str,
+                       selected_courses: list = None,
                        n: int = 100) -> list[dict]:
     """
     Return up to `n` colleges where the student's rank is BELOW the
@@ -95,6 +98,9 @@ def get_better_choices(rank: int, category_code: str,
     # Show SM (general) + student's own category
     cats_to_show = list({"SM", category_code})
     relevant = cutoffs[cutoffs["Alloted Category"].isin(cats_to_show)].copy()
+    
+    if selected_courses:
+        relevant = relevant[relevant["Course"].apply(lambda x: any(sc in str(x) for sc in selected_courses))].copy()
 
     # Student rank must be <= last allotted rank (they can get in)
     reachable = relevant[relevant["last_rank"] >= rank].copy()
@@ -143,11 +149,15 @@ def get_better_choices(rank: int, category_code: str,
     return results
 
 
-def get_historical_match(rank: int, category_code: str) -> dict:
+def get_historical_match(rank: int, category_code: str, selected_courses: list = None) -> dict:
     """Finds the student from 2025 who had the closest rank in eligible categories."""
     df = load_kerala_data()
     # Student is eligible for their category and SM (General)
     eligible = df[df["Alloted Category"].isin(["SM", category_code])].copy()
+    
+    if selected_courses:
+        # Filter strictly by selected courses
+        eligible = eligible[eligible["Course"].apply(lambda x: any(sc in str(x) for sc in selected_courses))].copy()
     
     if eligible.empty:
         return None
@@ -160,11 +170,12 @@ def get_historical_match(rank: int, category_code: str) -> dict:
         "historical_rank": int(closest_match["Rank"]),
         "college": str(closest_match["College Name"]),
         "category": str(closest_match["Alloted Category"]),
+        "course": str(closest_match.get("Course", "")),
         "diff": int(closest_match["diff"])
     }
 
 
-def get_quick_insight(rank: int, category_code: str) -> dict:
+def get_quick_insight(rank: int, category_code: str, selected_courses: list = None) -> dict:
     """Summary for the quick-info card shown right after registration."""
     df       = load_kerala_data()
     max_rank = df["Rank"].max()
@@ -184,8 +195,8 @@ def get_quick_insight(rank: int, category_code: str) -> dict:
     else:
         band = "Above 35,000 — Few options available"
 
-    better_choices = get_better_choices(rank, category_code, n=100)
-    historical_match = get_historical_match(rank, category_code)
+    better_choices = get_better_choices(rank, category_code, selected_courses, n=100)
+    historical_match = get_historical_match(rank, category_code, selected_courses)
 
     return {
         "rank":           rank,

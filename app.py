@@ -172,11 +172,11 @@ def show_insights_feed():
 
         _choices = _gov_count = _priv_count = None
         if _is_kerala and _final_rank:
-            _qi         = get_quick_insight(_final_rank, _cat_code)
+            _selected_courses = s.get("courses", ["MBBS"])
+            _qi         = get_quick_insight(_final_rank, _cat_code, _selected_courses)
             _choices    = _qi["better_choices"]
             
             # Filter by selected courses
-            _selected_courses = s.get("courses", ["MBBS"])
             if _selected_courses:
                 _choices = [c for c in _choices if any(sc in c.get("course", "") for sc in _selected_courses)]
                 
@@ -220,6 +220,87 @@ def show_insights_feed():
                         {"icon": "🏫", "label": "Private Options",   "value": str(_priv_count),    "color": "#E57373", "sub": "Includes aided/self-fin"},
                         {"icon": "📅", "label": "2025 Cutoff Data",  "value": "Final",              "color": "#9E9E9E", "sub": "Based on 2025 final cutoffs"},
                     ])
+                    
+                    @st.dialog("📋 Reachable Colleges List")
+                    def show_college_list_dialog(colleges, title):
+                        st.markdown(f"### {title}")
+                        if not colleges:
+                            st.info("No colleges found in this category for your rank.")
+                        else:
+                            html_table = """
+<style>
+.glass-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+.glass-table th {
+    background: rgba(255, 75, 75, 0.15);
+    color: #ff4b4b;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 12px;
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 2px solid rgba(255, 75, 75, 0.3);
+    letter-spacing: 0.5px;
+}
+.glass-table td {
+    padding: 14px 16px;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 14px;
+    font-weight: 500;
+}
+.glass-table tr:last-child td {
+    border-bottom: none;
+}
+.glass-table tr:hover {
+    background: rgba(255, 75, 75, 0.05);
+}
+</style>
+<table class="glass-table">
+    <thead>
+        <tr>
+            <th style="width: 10%;">#</th>
+            <th style="width: 50%;">College Name</th>
+            <th style="width: 20%;">Course</th>
+            <th style="width: 20%;">Cutoff Rank</th>
+        </tr>
+    </thead>
+    <tbody>
+"""
+                            seen_colleges = set()
+                            actual_idx = 1
+                            for c in colleges:
+                                c_name = str(c.get("college", "Unknown College")).strip()
+                                c_course = str(c.get("course", "Unknown Course")).strip()
+                                c_cutoff = c.get("last_rank", "N/A")
+                                
+                                # Unique key for deduplication
+                                unique_key = f"{c_name}_{c_course}"
+                                if unique_key in seen_colleges:
+                                    continue
+                                seen_colleges.add(unique_key)
+                                
+                                html_table += f"<tr><td style='color:#ff4b4b; font-weight:700;'>{actual_idx}</td><td>{c_name}</td><td>{c_course}</td><td style='color:#ff4b4b; font-weight:800;'>{c_cutoff}</td></tr>"
+                                actual_idx += 1
+                            
+                            html_table += "</tbody></table>"
+                            st.markdown(html_table, unsafe_allow_html=True)
+                                
+                    col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+                    with col_btn2:
+                        if st.button("🏛️ View Govt Colleges", use_container_width=True):
+                            gov_list = [c for c in _choices if c["college_type"] == "Government"]
+                            show_college_list_dialog(gov_list, "Government Options")
+                    with col_btn3:
+                        if st.button("🏫 View Private Colleges", use_container_width=True):
+                            priv_list = [c for c in _choices if c["college_type"] != "Government"]
+                            show_college_list_dialog(priv_list, "Private Options")
 
                 if _on("countdown"):
                     _deadline       = _rcfg.get("countdown_deadline", "")

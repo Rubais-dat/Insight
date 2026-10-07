@@ -1016,10 +1016,39 @@ def render_registration():
             unsafe_allow_html=True,
         )
 
+        ALL_COURSES = ["MBBS", "BDS", "BAMS", "BHMS", "BSMS", "BUMS", "B.VSc.", "B.Sc. (Hons.) Agriculture", "B.Tech Biotechnology", "B.Sc. Forestry", "B.Sc. Fisheries", "B.Sc. (Hons.) Co-operation & Banking", "B.Sc (Hons.) Climate change and Environmental Science"]
+        
+        selected_courses_raw = st.multiselect(
+            "Select Course(s) *",
+            ["ALL"] + ALL_COURSES,
+            default=["MBBS"]
+        )
+        
+        if "ALL" in selected_courses_raw:
+            selected_courses = ALL_COURSES
+        else:
+            selected_courses = selected_courses_raw
+        
+        # Filter category options based on selected courses
+        filtered_cat_options = cat_options
+        try:
+            from modules.data_loader import load_real_allotment_data
+            df = load_real_allotment_data()
+            if not df.empty and selected_courses:
+                valid_cats = set(df[df['Course'].isin(selected_courses)]['Category'].dropna().unique())
+                if valid_cats:
+                    # Keep original categories that exactly match valid_cats
+                    filtered_cat_options = [c for c in cat_options if c in valid_cats]
+                    if not filtered_cat_options:
+                        filtered_cat_options = cat_options
+        except Exception:
+            pass
+
         with st.form("registration_form"):
+            
             col3, col4 = st.columns(2)
             with col3:
-                category = st.selectbox("Category * (Kerala CEE)", cat_options)
+                category = st.selectbox("Category * (Kerala CEE)", filtered_cat_options)
             with col4:
                 exam = st.selectbox("Exam *", ["NEET UG"])
 
@@ -1033,11 +1062,6 @@ def render_registration():
                 score = st.number_input(
                     "NEET Score *", min_value=0, max_value=720, value=0, step=1
                 )
-            selected_courses = st.multiselect(
-                "Select Course(s) *",
-                ["MBBS", "BDS", "BAMS", "BHMS", "BSMS", "BUMS"],
-                default=["MBBS"]
-            )
             counsellings = st.multiselect(
                 "Select Counselling(s) *",
                 ["MCC (AIQ & Deemed)", "Kerala CEE (State Quota)", "KEA (Karnataka)", "TN Medical", "AYUSH (AACCC)"],
@@ -1182,10 +1206,17 @@ def render_quick_insight(student: dict):
 
     MU = BRAND["muted"]
 
-    qi      = get_quick_insight(final_rank, cat_code)
+    selected_courses = s.get("courses", ["MBBS"])
+    qi      = get_quick_insight(final_rank, cat_code, selected_courses)
     choices = qi["better_choices"]
+    
+    # Also filter choices by selected courses here if get_better_choices doesn't
+    if selected_courses:
+        choices = [c for c in choices if any(sc in c.get("course", "") for sc in selected_courses)]
+        
     gov     = [c for c in choices if c["college_type"] == "Government"]
     priv    = [c for c in choices if c["college_type"] == "Private"]
+    others  = [c for c in choices if c["college_type"] not in ["Government", "Private"]]
 
     def _clean(n):
         return _re2.sub(r"^[A-Z]{2,4}[-:\s]+", "", n).strip()
@@ -1200,12 +1231,24 @@ def render_quick_insight(student: dict):
             f"<b style='color:#C0392B;'>{g_fee}</b>. "
             f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
         )
+    elif others and not priv:
+        o_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b>" for c in others[:2])
+        para1 = (
+            f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
+            f"you have a solid chance at securing a seat in excellent institutions like {o_names}. "
+            f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
+        )
+    elif priv:
+        para1 = (
+            f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
+            f"securing a government college seat will be highly competitive. "
+            f"However, there are excellent pathways available in the private sector."
+        )
     else:
         para1 = (
             f"With a rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-            f"securing a government college seat in the general quotas will be highly competitive. "
-            f"However, there are still excellent pathways available. Your strategy should shift towards identifying "
-            f"the right private colleges that balance strong academics with a budget you are comfortable with."
+            f"securing a seat in the general quotas will be highly competitive. "
+            f"Your strategy should shift towards identifying the right colleges that balance strong academics with a budget you are comfortable with."
         )
 
     if priv:
@@ -1215,7 +1258,7 @@ def render_quick_insight(student: dict):
             f"Looking at the private sector, colleges such as {p_names} recorded "
             f"allotments at ranks very close to yours during the 2025 Kerala counselling rounds. "
             f"If you decide to pursue a seat in a private medical college, you should plan for a total investment of approximately "
-            f"<b style='color:#C0392B;'>{p_fee}</b> for the full duration of your MBBS course."
+            f"<b style='color:#C0392B;'>{p_fee}</b> for the full duration of your course."
         )
     else:
         para2 = ""
@@ -1230,9 +1273,10 @@ def render_quick_insight(student: dict):
         h_rank = hist["historical_rank"]
         h_col  = _clean(hist["college"])
         h_cat  = hist["category"]
+        h_course = hist.get("course", "your selected course")
         para_hist = (
             f"<b>Historic Match</b>: Last year, a student with a highly similar rank of "
-            f"<b style='color:#C0392B;'>{h_rank:,}</b> (in the {h_cat} category) secured a seat at "
+            f"<b style='color:#C0392B;'>{h_rank:,}</b> (in the {h_cat} category) secured a seat for {h_course} at "
             f"<b style='color:#C0392B;'>{h_col}</b>. This is a strong indicator of what you might expect."
         )
         para_hist_html = f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:20px;'>{para_hist}</p>"
@@ -1255,6 +1299,82 @@ def render_quick_insight(student: dict):
         f"</div>",
         unsafe_allow_html=True,
     )
+    
+    # --- Nearest Cutoff and Category Tabs ---
+    try:
+        from modules.data_loader import load_real_allotment_data
+        df = load_real_allotment_data()
+        
+        if not df.empty and final_rank and cat_code:
+            selected_courses = s.get("courses", ["MBBS"])
+            if not selected_courses:
+                selected_courses = ["MBBS"]
+                
+            df_cat = df[df["Category"] == cat_code]
+            if df_cat.empty:
+                df_cat = df[df["Category"].str.contains(cat_code, case=False, na=False)]
+                
+            cat_cutoffs = {}
+            nearest_text = ""
+            
+            if not df_cat.empty:
+                df_cat_course = df_cat[df_cat["Course"].isin(selected_courses)]
+                if not df_cat_course.empty:
+                    df_cat_course = df_cat_course.copy()
+                    df_cat_course["RankDiff"] = abs(df_cat_course["Rank"] - final_rank)
+                    nearest = df_cat_course.sort_values("RankDiff").iloc[0]
+                    nearest_text = f"Based on your selected courses, the nearest cutoff to your rank is <b style='color:#C0392B;'>{nearest['Rank']}</b> at <b style='color:#FFFFFF;'>{nearest['College Name']}</b> for <b style='color:#C0392B;'>{nearest['Course']}</b>."
+                
+                for c in selected_courses:
+                    df_c = df_cat[df_cat["Course"] == c]
+                    if not df_c.empty:
+                        cat_cutoffs[c] = df_c["Rank"].max()
+            
+            if nearest_text or cat_cutoffs:
+                
+                if nearest_text:
+                    st.markdown(f"""
+                    <div style='
+                        background: rgba(192, 57, 43, 0.05);
+                        border-left: 4px solid #C0392B;
+                        border-radius: 4px;
+                        padding: 16px;
+                        color: rgba(255,255,255,0.9);
+                        font-size: 14px;
+                        line-height: 1.5;
+                        margin-bottom: 20px;
+                    '>
+                        {nearest_text}
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                if cat_cutoffs:
+                    st.markdown("<div style='font-size:14px; font-weight:700; color:#FFFFFF; margin-bottom:12px;'>📊 Cutoff for your category across selected courses</div>", unsafe_allow_html=True)
+                    st.markdown("""
+                    <style>
+                    .scroll-tabs { 
+                        display: flex; 
+                        flex-direction: row; 
+                        overflow-x: auto; 
+                        padding-bottom: 10px; 
+                        gap: 12px; 
+                        white-space: nowrap; 
+                        width: 100%; 
+                        max-width: 100%;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .scroll-tabs::-webkit-scrollbar { display: none; }
+                    .scroll-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+                    </style>
+                    """, unsafe_allow_html=True)
+                    tabs_html = "<div class='scroll-tabs'>"
+                    sorted_cat_cutoffs = dict(sorted(cat_cutoffs.items(), key=lambda item: item[1]))
+                    for c, cutoff in sorted_cat_cutoffs.items():
+                        tabs_html += f"<div style='background: rgba(192, 57, 43, 0.08); border: 1px solid rgba(192, 57, 43, 0.2); border-radius: 8px; padding: 15px 15px; text-align: center; min-width: 140px; max-width: 180px; display: inline-flex; flex-direction: column; justify-content: center; flex-shrink: 0;'><div style='font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 5px; font-weight: 600; white-space: pre-wrap; word-break: break-word;'>{c}</div><div style='font-size: 18px; color: #C0392B; font-weight: 800;'>{cutoff}</div></div>"
+                    tabs_html += "</div>"
+                    st.markdown(tabs_html, unsafe_allow_html=True)
+    except Exception as e:
+        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────

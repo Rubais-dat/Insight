@@ -61,7 +61,55 @@ ROUND_LABELS = ["Round 1", "Round 2", "Round 3", "Mop-up"]
 
 
 # ─────────────────────────────────────────────
-# Previous Year Allotment Data
+# Real Allotment Data Loading
+# ─────────────────────────────────────────────
+@st.cache_data
+def load_real_allotment_data() -> pd.DataFrame:
+    """
+    Load and combine data from 2025_Rank.xlsx and KEAM_2025_AYUSH_Allied_All_Rounds (1).xlsx
+    """
+    import os
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    file1 = os.path.join(base_dir, "2025_Rank.xlsx")
+    file2 = os.path.join(base_dir, "KEAM_2025_AYUSH_Allied_All_Rounds (1).xlsx")
+    
+    dfs = []
+    
+    if os.path.exists(file1):
+        try:
+            df1 = pd.read_excel(file1)
+            # Standardise columns
+            df1 = df1.rename(columns={"Alloted Category": "Category"})
+            if "Category" in df1.columns and "Course" in df1.columns and "Rank" in df1.columns and "College Name" in df1.columns:
+                dfs.append(df1[['Rank', 'College Name', 'Course', 'Category']])
+        except Exception as e:
+            print(f"Error loading {file1}: {e}")
+            
+    if os.path.exists(file2):
+        try:
+            df2 = pd.read_excel(file2)
+            df2 = df2.rename(columns={"Allotted Category": "Category"})
+            if "Category" in df2.columns and "Course" in df2.columns and "Rank" in df2.columns and "College Name" in df2.columns:
+                dfs.append(df2[['Rank', 'College Name', 'Course', 'Category']])
+        except Exception as e:
+            print(f"Error loading {file2}: {e}")
+            
+    if dfs:
+        combined = pd.concat(dfs, ignore_index=True)
+        # Clean data
+        combined["Rank"] = pd.to_numeric(combined["Rank"], errors="coerce")
+        combined = combined.dropna(subset=["Rank"])
+        combined["Rank"] = combined["Rank"].astype(int)
+        
+        # Clean course names (remove prefix like AV- )
+        combined["Course"] = combined["Course"].apply(lambda x: str(x).split("- ", 1)[1] if "- " in str(x) else str(x))
+        return combined
+    
+    return pd.DataFrame(columns=['Rank', 'College Name', 'Course', 'Category'])
+
+
+# ─────────────────────────────────────────────
+# Previous Year Allotment Data (Simulated fallback)
 # ─────────────────────────────────────────────
 @st.cache_data
 def load_allotment_data() -> pd.DataFrame:
