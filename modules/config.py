@@ -136,3 +136,25 @@ STATE_CATEGORIES: dict[str, list[str]] = {
 # ─────────────────────────────────────────────
 POLL_SUBJECTS = ["Biology", "Chemistry", "Physics"]
 DIFFICULTY_LEVELS = ["Very Easy", "Easy", "Moderate", "Difficult", "Very Difficult"]
+
+
+# ─────────────────────────────────────────────
+# Runtime config helpers
+# ─────────────────────────────────────────────
+import json as _json
+import os as _os
+
+def load_manual_insights(config_path: str | None = None) -> list:
+    """Load the list of manual insights from runtime_config.json (admin-controlled)."""
+    if config_path is None:
+        config_path = _os.path.join(_os.path.dirname(__file__), "..", "runtime_config.json")
+    try:
+        with open(config_path, "r") as f:
+            cfg = _json.load(f)
+        insights = cfg.get("manual_insights", [])
+        if isinstance(insights, list):
+            return insights
+        return []
+    except Exception:
+        return []
+

@@ -83,7 +83,7 @@ def get_last_ranks() -> pd.DataFrame:
 
 
 def get_better_choices(rank: int, category_code: str,
-                       n: int = 6) -> list[dict]:
+                       n: int = 100) -> list[dict]:
     """
     Return up to `n` colleges where the student's rank is BELOW the
     2025 last-allotted rank — i.e. they have a real shot.
@@ -184,7 +184,7 @@ def get_quick_insight(rank: int, category_code: str) -> dict:
     else:
         band = "Above 35,000 — Few options available"
 
-    better_choices = get_better_choices(rank, category_code, n=6)
+    better_choices = get_better_choices(rank, category_code, n=100)
     historical_match = get_historical_match(rank, category_code)
 
     return {
