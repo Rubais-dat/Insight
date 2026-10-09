@@ -993,6 +993,8 @@ def render_registration():
 
         st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
+        prev_s = st.session_state.get("student", {})
+        
         # Personal details
         st.markdown(
             f"<div style='font-size:11px;font-weight:800;color:{MU};"
@@ -1002,7 +1004,7 @@ def render_registration():
         )
         col1, col2 = st.columns(2)
         with col1:
-            st.text_input("Full Name *", placeholder="e.g. Arjun Kumar", key="pre_name")
+            st.text_input("Full Name *", placeholder="e.g. Arjun Kumar", key="pre_name", value=prev_s.get("name", ""))
         with col2:
             st.selectbox("State *", ["Kerala"], key="reg_state")
 
@@ -1021,7 +1023,7 @@ def render_registration():
         selected_courses_raw = st.multiselect(
             "Select Course(s) *",
             ALL_COURSES,
-            default=["MBBS"]
+            default=prev_s.get("courses", ["MBBS"])
         )
         selected_courses = selected_courses_raw
         
@@ -1044,7 +1046,9 @@ def render_registration():
             
             col3, col4 = st.columns(2)
             with col3:
-                category = st.selectbox("Category * (Kerala CEE)", filtered_cat_options)
+                def_cat = prev_s.get("category", "")
+                cat_idx = filtered_cat_options.index(def_cat) if def_cat in filtered_cat_options else 0
+                category = st.selectbox("Category * (Kerala CEE)", filtered_cat_options, index=cat_idx)
             with col4:
                 exam = st.selectbox("Exam *", ["NEET UG"])
 
@@ -1052,16 +1056,16 @@ def render_registration():
             col_r, col_s = st.columns(2)
             with col_r:
                 rank = st.number_input(
-                    "State Rank (leave 0 if unknown) *", min_value=0, max_value=1_000_000, value=0, step=1
+                    "State Rank (leave 0 if unknown) *", min_value=0, max_value=1_000_000, value=prev_s.get("rank") or 0, step=1
                 )
             with col_s:
                 score = st.number_input(
-                    "NEET Score *", min_value=0, max_value=720, value=0, step=1
+                    "NEET Score *", min_value=0, max_value=720, value=prev_s.get("score") or 0, step=1
                 )
             counsellings = st.multiselect(
                 "Select Counselling(s) *",
                 ["MCC (AIQ & Deemed)", "Kerala CEE (State Quota)", "KEA (Karnataka)", "TN Medical", "AYUSH (AACCC)"],
-                default=["Kerala CEE (State Quota)"]
+                default=prev_s.get("counsellings", ["Kerala CEE (State Quota)"])
             )
             st.markdown("<br>", unsafe_allow_html=True)
             submitted = st.form_submit_button(
@@ -1207,57 +1211,72 @@ def render_quick_insight(student: dict):
     choices = qi["better_choices"]
     
     # Also filter choices by selected courses here if get_better_choices doesn't
-    if selected_courses:
-        choices = [c for c in choices if any(sc in c.get("course", "") for sc in selected_courses)]
-        
-    gov     = [c for c in choices if c["college_type"] == "Government"]
-    priv    = [c for c in choices if c["college_type"] == "Private"]
-    others  = [c for c in choices if c["college_type"] not in ["Government", "Private"]]
-
     def _clean(n):
         return _re2.sub(r"^[A-Z]{2,4}[-:\s]+", "", n).strip()
 
-    if gov:
-        g_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b>" for c in gov[:2])
-        g_fee   = f"₹{gov[0]['total_fee']:,.0f}" if gov[0]["total_fee"] else "very low fees"
-        para1 = (
-            f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-            f"you have a solid chance at securing a seat in government institutions like {g_names}. "
-            f"These colleges offer excellent infrastructure and faculty, with total course fees structured as low as "
-            f"<b style='color:#C0392B;'>{g_fee}</b>. "
-            f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
-        )
-    elif others and not priv:
-        o_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b>" for c in others[:2])
-        para1 = (
-            f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-            f"you have a solid chance at securing a seat in excellent institutions like {o_names}. "
-            f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
-        )
-    elif priv:
-        para1 = (
-            f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-            f"securing a government college seat will be highly competitive. "
-            f"However, there are excellent pathways available in the private sector."
-        )
+    insights_html = ""
+    
+    if not selected_courses or not choices:
+        insights_html = f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:20px;'>With a rank of <b style='color:#C0392B;'>{final_rank:,}</b>, there are no immediate matches available in the selected courses based on last year's data.</p>"
     else:
-        para1 = (
-            f"With a rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-            f"securing a seat in the general quotas will be highly competitive. "
-            f"Your strategy should shift towards identifying the right colleges that balance strong academics with a budget you are comfortable with."
-        )
-
-    if priv:
-        p_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b>" for c in priv[:2])
-        p_fee   = f"₹{priv[0]['total_fee']:,.0f}" if priv[0]["total_fee"] else "fees vary by college"
-        para2 = (
-            f"Looking at the private sector, colleges such as {p_names} recorded "
-            f"allotments at ranks very close to yours during the 2025 Kerala counselling rounds. "
-            f"If you decide to pursue a seat in a private medical college, you should plan for a total investment of approximately "
-            f"<b style='color:#C0392B;'>{p_fee}</b> for the full duration of your course."
-        )
-    else:
-        para2 = ""
+        for course_name in selected_courses:
+            course_choices = [c for c in choices if course_name in str(c.get("course", ""))]
+            
+            gov     = [c for c in course_choices if c["college_type"] == "Government"]
+            priv    = [c for c in course_choices if c["college_type"] == "Private"]
+            others  = [c for c in course_choices if c["college_type"] not in ["Government", "Private"]]
+            
+            c_html = f"<div style='margin-bottom:24px;'><h4 style='color:#FFFFFF; margin-bottom:12px; font-size:17px;'>📌 For {course_name}</h4>"
+            
+            if not course_choices:
+                c_html += f"<p style='font-size:15px; color:{MU}; line-height:2;'>With a rank of <b style='color:#C0392B;'>{final_rank:,}</b>, securing a seat in <b>{course_name}</b> appears to be highly unlikely based on last year's data. There are no reachable colleges within your current standing.</p>"
+            else:
+                para1 = ""
+                if gov:
+                    g_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b> (cutoff: <b style='color:#C0392B;'>{c['last_rank']:,}</b>)" for c in gov[:2])
+                    g_fee   = f"₹{gov[0]['total_fee']:,.0f}" if gov[0]["total_fee"] else "very low fees"
+                    para1 = (
+                        f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
+                        f"you have a solid chance at securing a seat in government institutions like {g_names}. "
+                        f"These colleges offer excellent infrastructure and faculty, with total course fees structured as low as "
+                        f"<b style='color:#C0392B;'>{g_fee}</b>. "
+                        f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
+                    )
+                elif others and not priv:
+                    o_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b> (cutoff: <b style='color:#C0392B;'>{c['last_rank']:,}</b>)" for c in others[:2])
+                    para1 = (
+                        f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
+                        f"you have a solid chance at securing a seat in excellent institutions like {o_names}. "
+                        f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
+                    )
+                elif priv:
+                    para1 = (
+                        f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
+                        f"securing a government college seat for <b>{course_name}</b> will be highly competitive. "
+                        f"However, there are excellent pathways available in the private sector."
+                    )
+                else:
+                    para1 = (
+                        f"With a rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
+                        f"securing a seat in the general quotas will be highly competitive. "
+                        f"Your strategy should shift towards identifying the right colleges that balance strong academics with a budget you are comfortable with."
+                    )
+            
+                c_html += f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:12px;'>{para1}</p>"
+                
+                if priv:
+                    p_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b> (cutoff: <b style='color:#C0392B;'>{c['last_rank']:,}</b>)" for c in priv[:2])
+                    p_fee   = f"₹{priv[0]['total_fee']:,.0f}" if priv[0]["total_fee"] else "fees vary by college"
+                    para2 = (
+                        f"Looking at the private sector, colleges such as {p_names} recorded "
+                        f"allotments at ranks very close to yours during the 2025 Kerala counselling rounds. "
+                        f"If you decide to pursue a seat in a private college, you should plan for a total investment of approximately "
+                        f"<b style='color:#C0392B;'>{p_fee}</b> for the full duration of your course."
+                    )
+                    c_html += f"<p style='font-size:15px; color:{MU}; line-height:2;'>{para2}</p>"
+                    
+            c_html += "</div>"
+            insights_html += c_html
 
     para3 = (
         "Below, you'll find the latest updates and insights posted by the GMA team. "
@@ -1275,21 +1294,19 @@ def render_quick_insight(student: dict):
             f"<b style='color:#C0392B;'>{h_rank:,}</b> (in the {h_cat} category) secured a seat for {h_course} at "
             f"<b style='color:#C0392B;'>{h_col}</b>. This is a strong indicator of what you might expect."
         )
-        para_hist_html = f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:20px;'>{para_hist}</p>"
+        para_hist_html = f"<div style='margin-bottom:24px;'><p style='font-size:15px; color:{MU}; line-height:2;'>{para_hist}</p></div>"
     else:
         para_hist_html = ""
 
-    para2_html = f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:20px;'>{para2}</p>" if para2 else ""
     para3_html = f"<p style='font-size:15px; color:{MU}; line-height:2; margin:0;'>{para3}</p>"
 
     st.markdown(
         f"<div style='background:{BRAND['bg_card']}; border:1px solid #1E1E1E;"
         f"border-left:4px solid #C0392B; border-radius:16px;"
         f"padding:30px 36px; margin-bottom:24px;'>"
-        f"<div style='font-size:20px; font-weight:800; color:#FFFFFF; margin-bottom:16px;'>"
+        f"<div style='font-size:20px; font-weight:800; color:#FFFFFF; margin-bottom:24px;'>"
         f"⚡ Quick Insight</div>"
-        f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:20px;'>{para1}</p>"
-        f"{para2_html}"
+        f"{insights_html}"
         f"{para_hist_html}"
         f"{para3_html}"
         f"</div>",

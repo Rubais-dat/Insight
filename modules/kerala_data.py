@@ -207,6 +207,59 @@ def get_quick_insight(rank: int, category_code: str, selected_courses: list = No
 
     better_choices = get_better_choices(rank, category_code, selected_courses, n=1000)
     historical_match = get_historical_match(rank, category_code, selected_courses)
+    
+    course_insights = []
+    if selected_courses:
+        cutoffs = get_last_ranks()
+        cats_to_show = list({"SM", category_code})
+        relevant = cutoffs[cutoffs["Alloted Category"].isin(cats_to_show)].copy()
+        reachable_so_far = []
+        unreachable_so_far = []
+        for sc in selected_courses:
+            course_data = relevant[relevant["Course"].apply(lambda x: sc in str(x))].copy()
+            if course_data.empty:
+                continue
+                
+            reachable_course = course_data[course_data["last_rank"] >= rank].copy()
+            is_reachable = not reachable_course.empty
+            
+            if not is_reachable:
+                nearest = course_data.sort_values("last_rank", ascending=False).iloc[0]
+                n_rank = int(nearest['last_rank'])
+                n_col = str(nearest['College Name']).strip()
+                
+                if sc == "MBBS":
+                    msg = f"Unfortunately, with a rank of <b style='color:#C0392B;'>{rank:,}</b>, securing a seat in <b>MBBS</b> under the <b>{category_code}</b> category appears to be highly unlikely based on last year's data. For context, the absolute lowest cutoff observed was <b style='color:#C0392B;'>{n_rank:,}</b> at <b style='color:#C0392B;'>{n_col}</b>."
+                elif not reachable_so_far:
+                    msg = f"Similarly, <b>{sc}</b> also falls short of the required threshold in the <b>{category_code}</b> category. Last year, the final seat was allocated at <b style='color:#C0392B;'>{n_rank:,}</b> at <b style='color:#C0392B;'>{n_col}</b>, making it a very difficult target."
+                else:
+                    msg = f"While you have strong chances in the courses above, <b>{sc}</b> remains highly competitive. The closest anyone got last year was <b style='color:#C0392B;'>{n_rank:,}</b> at <b style='color:#C0392B;'>{n_col}</b>, so it should be treated as a stretch goal."
+                
+                unreachable_so_far.append(sc)
+                course_insights.append({
+                    "course": sc,
+                    "reachable": False,
+                    "msg": msg
+                })
+            else:
+                closest = reachable_course.sort_values("last_rank").iloc[0]
+                c_rank = int(closest['last_rank'])
+                c_col = str(closest['College Name']).strip()
+                
+                if sc == "MBBS":
+                    msg = f"Based on your current rank of <b style='color:#C0392B;'>{rank:,}</b>, you have a very solid chance of securing a seat in <b>MBBS</b> during the upcoming allotments. Looking at the 2025 trends for the <b>{category_code}</b> category, the closest matching cutoff to your position was <b style='color:#C0392B;'>{c_rank:,}</b> at <b style='color:#C0392B;'>{c_col}</b>."
+                elif unreachable_so_far and not reachable_so_far:
+                    prev = ", ".join(unreachable_so_far)
+                    msg = f"While {prev} might be out of reach, there is great news regarding <b>{sc}</b>. Your rank puts you in a highly competitive position within the <b>{category_code}</b> quota, with a realistic target matching cutoff of <b style='color:#C0392B;'>{c_rank:,}</b> at <b style='color:#C0392B;'>{c_col}</b>."
+                else:
+                    msg = f"Additionally, the data looks incredibly promising for <b>{sc}</b>. When analyzing the <b>{category_code}</b> category cutoffs, we see a direct match at <b style='color:#C0392B;'>{c_col}</b> which closed at <b style='color:#C0392B;'>{c_rank:,}</b>."
+                
+                reachable_so_far.append(sc)
+                course_insights.append({
+                    "course": sc,
+                    "reachable": True,
+                    "msg": msg
+                })
 
     return {
         "rank":           rank,
@@ -215,5 +268,6 @@ def get_quick_insight(rank: int, category_code: str, selected_courses: list = No
         "rank_band":      band,
         "better_choices": better_choices,
         "historical_match": historical_match,
+        "course_insights": course_insights
     }
 

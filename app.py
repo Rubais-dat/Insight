@@ -135,6 +135,12 @@ def show_insights_feed():
     # ── Main content ──────────────────────────────────────────────────────────
     _, main, _ = st.columns([0.3, 9, 0.3])
     with main:
+        col1, col2 = st.columns([8, 2])
+        with col2:
+            if st.button("✏️ Edit Details", use_container_width=True):
+                st.session_state.registered = False
+                st.rerun()
+                
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ── Read runtime config once ─────────────────────────────────────────
