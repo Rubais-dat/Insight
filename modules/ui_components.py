@@ -1233,20 +1233,26 @@ def render_quick_insight(student: dict):
             else:
                 para1 = ""
                 if gov:
-                    g_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b> (cutoff: <b style='color:#C0392B;'>{c['last_rank']:,}</b>)" for c in gov[:2])
+                    gov_sorted = sorted(gov, key=lambda x: abs(x["last_rank"] - final_rank))
+                    nearest_g = gov_sorted[0]
+                    g_count = len([c for c in gov if c["last_rank"] >= final_rank])
                     g_fee   = f"₹{gov[0]['total_fee']:,.0f}" if gov[0]["total_fee"] else "very low fees"
+                    
                     para1 = (
                         f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-                        f"you have a solid chance at securing a seat in government institutions like {g_names}. "
-                        f"These colleges offer excellent infrastructure and faculty, with total course fees structured as low as "
-                        f"<b style='color:#C0392B;'>{g_fee}</b>. "
-                        f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
+                        f"your nearest matching government cutoff was <b style='color:#C0392B;'>{nearest_g['last_rank']:,}</b> at <b style='color:#C0392B;'>{_clean(nearest_g['college'])}</b>. "
+                        f"In total, you have strong chances in <b>{g_count}</b> government institutions for <b>{course_name}</b>. "
+                        f"These colleges offer excellent infrastructure and faculty, with total course fees structured as low as <b style='color:#C0392B;'>{g_fee}</b>."
                     )
                 elif others and not priv:
-                    o_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b> (cutoff: <b style='color:#C0392B;'>{c['last_rank']:,}</b>)" for c in others[:2])
+                    oth_sorted = sorted(others, key=lambda x: abs(x["last_rank"] - final_rank))
+                    nearest_o = oth_sorted[0]
+                    o_count = len([c for c in others if c["last_rank"] >= final_rank])
+                    
                     para1 = (
                         f"Based on your rank of <b style='color:#C0392B;'>{final_rank:,}</b>, "
-                        f"you have a solid chance at securing a seat in excellent institutions like {o_names}. "
+                        f"your nearest matching cutoff was <b style='color:#C0392B;'>{nearest_o['last_rank']:,}</b> at <b style='color:#C0392B;'>{_clean(nearest_o['college'])}</b>. "
+                        f"In total, you have strong chances in <b>{o_count}</b> excellent institutions for <b>{course_name}</b>. "
                         f"This is a genuinely strong and achievable option that you should prioritize during your choice filling."
                     )
                 elif priv:
@@ -1265,11 +1271,14 @@ def render_quick_insight(student: dict):
                 c_html += f"<p style='font-size:15px; color:{MU}; line-height:2; margin-bottom:12px;'>{para1}</p>"
                 
                 if priv:
-                    p_names = " and ".join(f"<b style='color:#C0392B;'>{_clean(c['college'])}</b> (cutoff: <b style='color:#C0392B;'>{c['last_rank']:,}</b>)" for c in priv[:2])
+                    priv_sorted = sorted(priv, key=lambda x: abs(x["last_rank"] - final_rank))
+                    nearest_p = priv_sorted[0]
+                    p_count = len([c for c in priv if c["last_rank"] >= final_rank])
                     p_fee   = f"₹{priv[0]['total_fee']:,.0f}" if priv[0]["total_fee"] else "fees vary by college"
+                    
                     para2 = (
-                        f"Looking at the private sector, colleges such as {p_names} recorded "
-                        f"allotments at ranks very close to yours during the 2025 Kerala counselling rounds. "
+                        f"Looking at the private sector, your nearest matching cutoff was <b style='color:#C0392B;'>{nearest_p['last_rank']:,}</b> at <b style='color:#C0392B;'>{_clean(nearest_p['college'])}</b>. "
+                        f"In total, there are <b>{p_count}</b> private colleges for <b>{course_name}</b> that recorded allotments at ranks within your reach. "
                         f"If you decide to pursue a seat in a private college, you should plan for a total investment of approximately "
                         f"<b style='color:#C0392B;'>{p_fee}</b> for the full duration of your course."
                     )
@@ -1336,7 +1345,7 @@ def render_quick_insight(student: dict):
                     df_cat_course = df_cat_course.copy()
                     df_cat_course["RankDiff"] = abs(df_cat_course["Rank"] - final_rank)
                     nearest = df_cat_course.sort_values("RankDiff").iloc[0]
-                    nearest_text = f"Based on your selected courses, the nearest cutoff to your rank is <b style='color:#C0392B;'>{nearest['Rank']}</b> at <b style='color:#FFFFFF;'>{nearest['College Name']}</b> for <b style='color:#C0392B;'>{nearest['Course']}</b>."
+                    nearest_text = f"Based on your selected courses, the nearest student rank to your rank is <b style='color:#C0392B;'>{nearest['Rank']}</b> at <b style='color:#FFFFFF;'>{nearest['College Name']}</b> for <b style='color:#C0392B;'>{nearest['Course']}</b>."
                 
                 for c in selected_courses:
                     df_c = df_cat[df_cat["Course"] == c]
